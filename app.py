@@ -13,66 +13,31 @@ st.markdown(
     .main {
         background-color: #f7f9fb;
     }
-    html, body, [class*="css"] {
-        font-size: 17px;
-    }
-    h1 {
+    h1, h2, h3 {
         color: #1a1a2e;
-        font-size: 2.4rem !important;
-    }
-    h2 {
-        color: #1a1a2e;
-        font-size: 1.7rem !important;
-    }
-    h3 {
-        color: #1a1a2e;
-        font-size: 1.35rem !important;
-    }
-    p, li, .stMarkdown, .stCaption, div[data-testid="stCaptionContainer"] {
-        font-size: 1.05rem !important;
     }
     div[data-testid="stMetric"] {
         background-color: #ffffff;
         border: 1px solid #e6e6e6;
         border-radius: 10px;
-        padding: 14px 18px;
+        padding: 12px 16px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    div[data-testid="stMetricLabel"] {
-        font-size: 1.05rem !important;
-    }
-    div[data-testid="stMetricValue"] {
-        font-size: 1.9rem !important;
-    }
-    div[data-testid="stMetricDelta"] {
-        font-size: 1rem !important;
     }
     div[data-testid="stExpander"] {
         border: 1px solid #e6e6e6;
         border-radius: 10px;
-        font-size: 1.05rem !important;
-    }
-    div[data-testid="stExpander"] summary {
-        font-size: 1.1rem !important;
-    }
-    label, .stSelectbox label, .stSlider label, .stNumberInput label {
-        font-size: 1.05rem !important;
     }
     .stButton>button {
         background-color: #2ecc71;
         color: white;
         border-radius: 8px;
         border: none;
-        padding: 0.6em 1.6em;
+        padding: 0.5em 1.5em;
         font-weight: 600;
-        font-size: 1.1rem;
     }
     .stButton>button:hover {
         background-color: #27ae60;
         color: white;
-    }
-    table {
-        font-size: 1.05rem !important;
     }
     </style>
     """,
@@ -519,7 +484,7 @@ if st.button("Run Prediction"):
 
     with chart_col:
 
-        fig, ax = plt.subplots(figsize=(9, 6))
+        fig, ax = plt.subplots()
 
         colors = [
             "#ff4b4b" if value < 0
@@ -534,21 +499,14 @@ if st.button("Run Prediction"):
         )
 
         ax.set_xlabel(
-            "SHAP value (impact on prediction)",
-            fontsize=11
+            "SHAP value (impact on prediction)"
         )
 
         ax.set_title(
-            "Top 10 features driving this prediction",
-            fontsize=13
+            "Top 10 features driving this prediction"
         )
 
-        ax.tick_params(axis="y", labelsize=11)
-        ax.tick_params(axis="x", labelsize=10)
-
-        fig.tight_layout()
-
-        st.pyplot(fig, use_container_width=True)
+        st.pyplot(fig)
 
         st.caption(
             "Green bars push the prediction toward a higher "
@@ -598,13 +556,12 @@ if st.button("Run Prediction"):
         )
 
         fig_waterfall = plt.gcf()
-        fig_waterfall.set_size_inches(9, 6)
+        fig_waterfall.set_size_inches(7, 4.5)
         fig_waterfall.tight_layout()
 
         st.pyplot(
             fig_waterfall,
-            clear_figure=True,
-            use_container_width=True
+            clear_figure=True
         )
 
     st.header(
