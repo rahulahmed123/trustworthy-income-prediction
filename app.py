@@ -7,13 +7,50 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="Trustworthy Income Prediction", layout="wide")
 
+st.markdown(
+    """
+    <style>
+    .main {
+        background-color: #f7f9fb;
+    }
+    h1, h2, h3 {
+        color: #1a1a2e;
+    }
+    div[data-testid="stMetric"] {
+        background-color: #ffffff;
+        border: 1px solid #e6e6e6;
+        border-radius: 10px;
+        padding: 12px 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    div[data-testid="stExpander"] {
+        border: 1px solid #e6e6e6;
+        border-radius: 10px;
+    }
+    .stButton>button {
+        background-color: #2ecc71;
+        color: white;
+        border-radius: 8px;
+        border: none;
+        padding: 0.5em 1.5em;
+        font-weight: 600;
+    }
+    .stButton>button:hover {
+        background-color: #27ae60;
+        color: white;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 model = joblib.load("models/lgbm_model.pkl")
 scaler = joblib.load("models/scaler.pkl")
 feature_columns = joblib.load("models/feature_columns.pkl")
 numeric_cols = joblib.load("models/numeric_cols.pkl")
 
-DECISION_THRESHOLD = 0.5
-UNCERTAINTY_THRESHOLD = 0.5
+DECISION_THRESHOLD = 0.3494
+UNSTABLE_THRESHOLD = 0.5
 LGBM_ECE_FROM_PHASE6 = 0.0129
 LGBM_BRIER_SCORE = 0.0844
 N_PERTURBATION_TRIALS = 20
@@ -182,7 +219,8 @@ def encode_and_scale(raw_df):
 
     encoded = pd.get_dummies(
         raw_df,
-        columns=categorical_cols
+        columns=categorical_cols,
+        drop_first=True
     )
 
     encoded = encoded.reindex(
@@ -263,7 +301,7 @@ if st.button("Run Prediction"):
     )
 
     c3.metric(
-        "Distance from 50% boundary",
+        f"Distance from {DECISION_THRESHOLD:.2%} threshold",
         f"{boundary_distance:.2%}"
     )
 
@@ -288,7 +326,7 @@ if st.button("Run Prediction"):
 
     st.caption(
         "This score is derived directly from how close "
-        "the probability is to the 50% decision boundary "
+        "the probability is to the decision boundary "
         "(1 = exactly at the boundary, 0 = maximally confident)."
     )
 
@@ -373,14 +411,16 @@ if st.button("Run Prediction"):
     s3.metric(
         "Status",
         "STABLE"
-        if stability_pct >= 0.8
+        if stability_pct >= (1 - UNSTABLE_THRESHOLD)
         else "UNSTABLE"
     )
 
     st.caption(
         "Each trial applies small Gaussian perturbations "
         "to standardized age, hours_per_week, and capital_gain, "
-        "following the project's perturbation-based reliability analysis."
+        "following the project's perturbation-based reliability analysis. "
+        "A sample is flagged UNSTABLE when its stability score falls "
+        "below the same 0.5 cutoff used in Phase 6/7 of the project."
     )
 
     with st.expander("Project Reliability Reference"):
@@ -413,6 +453,9 @@ if st.button("Run Prediction"):
     )
 
     shap_row = shap_explanation.values[0]
+
+    if shap_row.ndim > 1:
+        shap_row = shap_row[:, 1]
 
     contrib_df = pd.DataFrame({
         "feature": encoded_input.columns,
@@ -523,7 +566,7 @@ if st.button("Run Prediction"):
         "6. Decision (Autonomous Decision-Making Pillar)"
     )
 
-    if uncertainty_score >= UNCERTAINTY_THRESHOLD:
+    if uncertainty_score >= (1 - UNSTABLE_THRESHOLD):
 
         decision_mode = "Human Review"
         decision_icon = "⚠️"
@@ -554,13 +597,13 @@ if st.button("Run Prediction"):
 
     st.write(
         f"- Model probability = {probability:.2%}, "
-        f"decision threshold = {DECISION_THRESHOLD:.0%}"
+        f"decision threshold = {DECISION_THRESHOLD:.2%} "
+        f"(Phase 4 optimized threshold for LightGBM)"
     )
 
     st.write(
         f"- Uncertainty score = {uncertainty_score:.3f}, "
-        f"autonomous-use threshold = "
-        f"{UNCERTAINTY_THRESHOLD:.3f}"
+        f"review threshold = {(1 - UNSTABLE_THRESHOLD):.3f}"
     )
 
     st.write(
@@ -572,18 +615,18 @@ if st.button("Run Prediction"):
     if decision_mode == "Human Review":
 
         st.write(
-            "- Uncertainty meets or exceeds the "
-            "autonomous-use threshold, so this case is "
-            "not considered reliable enough for a fully "
-            "automated decision and is routed to a human reviewer."
+            "- Uncertainty meets or exceeds the review "
+            "threshold, so this case is not considered "
+            "reliable enough for a fully automated decision "
+            "and is routed to a human reviewer."
         )
 
     else:
 
         st.write(
-            "- Uncertainty is below the autonomous-use "
-            "threshold, so this case can be auto-decided "
-            "under the current policy."
+            "- Uncertainty is below the review threshold, "
+            "so this case can be auto-decided under the "
+            "current policy."
         )
 
     st.header("7. Project Validation References")
