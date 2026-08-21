@@ -549,16 +549,18 @@ if st.button("Run Prediction"):
 
     with st.expander("SHAP Waterfall Explanation"):
 
-        fig_waterfall, ax_waterfall = plt.subplots()
-
         shap.plots.waterfall(
             shap_explanation[0],
             max_display=10,
             show=False
         )
 
+        fig_waterfall = plt.gcf()
+        fig_waterfall.set_size_inches(7, 4.5)
+        fig_waterfall.tight_layout()
+
         st.pyplot(
-            plt.gcf(),
+            fig_waterfall,
             clear_figure=True
         )
 
